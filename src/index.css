@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@450;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Space Grotesk", "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Base custom styles to support smooth theme transitioning and typography reset */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+:root {
+  --background-color: #f8fafc;
+  --text-color: #0f172a;
+  --panel-bg: rgba(255, 255, 255, 0.75);
+  --panel-border: rgba(15, 23, 42, 0.05);
+  --card-bg: rgba(255, 255, 255, 0.6);
+  --card-border: rgba(15, 23, 42, 0.05);
+}
+
+.dark {
+  --background-color: #0a0e17;
+  --text-color: #f1f5f9;
+  --panel-bg: rgba(10, 14, 23, 0.75);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --card-bg: rgba(15, 23, 42, 0.4);
+  --card-border: rgba(255, 255, 255, 0.06);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Base smooth, coordinated theme switching transition */
+body, 
+section, 
+header, 
+nav, 
+footer, 
+main,
+.geometric-card,
+.glass-panel,
+button,
+a,
+span,
+h1, h2, h3, h4, h5, h6, p,
+input,
+textarea {
+  transition-property: background-color, color, border-color, box-shadow;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-duration: 400ms;
+}
+
+/* Glassmorphic custom classes compatible with tailwind and Geometric Balance */
+.glass-panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--panel-border);
+}
+
+.geometric-card {
+  border-radius: 1rem;
+  background: var(--card-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--card-border);
+}
+
+.geometric-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(6, 182, 212, 0.35); /* cyan hover subtle flare */
+  box-shadow: 0 12px 30px -10px rgba(6, 182, 212, 0.12);
+}
+
+.light .geometric-card:hover {
+  border-color: rgba(6, 182, 212, 0.25);
+  box-shadow: 0 12px 30px -10px rgba(6, 182, 212, 0.08);
+}
+
+/* Glass card hover for older class mappings */
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px -10px rgba(6, 182, 212, 0.15);
+  border-color: rgba(6, 182, 212, 0.35);
+}
+
+/* Animated gradient background accent */
+@keyframes gradient-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-glow-text {
+  background: linear-gradient(135deg, #06b6d4, #8b5cf6, #14b8a6); /* Beautiful Cyan-Violet-Teal dynamic balance preset */
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-flow 5s linear infinite;
+}
+
+.animate-glow-border {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(139, 92, 246, 0.3), rgba(20, 184, 166, 0.3));
+  background-size: 200% auto;
+  animation: gradient-flow 5s linear infinite;
+}
+
+.glow-ring-pulsing {
+  box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.6);
+  animation: pulse-ring 2s infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(6, 182, 212, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0);
+  }
+}
