@@ -257,12 +257,27 @@ app.post('/api/send-email', async (req, res) => {
       finalSecure = (portVal === 465);
     }
 
+    // Diagnostic check for Gmail App Passwords
+    const isGmail = /gmail/i.test(smtpHost || '') || /gmail/i.test(smtpUser || '');
+    let gmailTip = '';
+    if (isGmail) {
+      const cleanPass = (smtpPass || '').replace(/\s/g, '');
+      if (cleanPass.length !== 16) {
+        gmailTip = `Tip: You are using Gmail SMTP. Google requires a 16-character "App Password" (spaces are ignored) for non-OAuth connections. Your current password length is ${cleanPass.length} characters, which might be a regular password. Please generate an App Password in your Google Account Settings -> Security -> 2-Step Verification.`;
+        console.warn(`[SMTP Warning] Potential Gmail App Password issue: ${gmailTip}`);
+      } else {
+        gmailTip = `Tip: You are using Gmail SMTP with a 16-character App Password, which is correct. Ensure 2-Step Verification is enabled in your Google Account.`;
+      }
+    }
+
     try {
       // 2. Initialize Nodemailer with robust production configuration
       const transporter = nodemailer.createTransport({
         host: smtpHost,
         port: portVal,
         secure: finalSecure,
+        // Force IPv4 only to bypass failing IPv6 DNS lookups in sandboxed containers (like Render or Cloud Run)
+        family: 4,
         auth: {
           user: smtpUser,
           pass: smtpPass
@@ -272,9 +287,10 @@ app.post('/api/send-email', async (req, res) => {
           // highly common in production container nodes like Render
           rejectUnauthorized: false
         },
-        connectionTimeout: 10000, // 10s connection timeout
-        greetingTimeout: 10000,   // 10s greeting timeout
-      });
+        connectionTimeout: 10000, // 10 seconds connection timeout
+        greetingTimeout: 10000,   // 10 seconds greeting timeout
+        socketTimeout: 15000,     // 15 seconds socket activity timeout
+      } as any);
 
       // HTML body for professional look
       const htmlBody = `
@@ -310,14 +326,34 @@ app.post('/api/send-email', async (req, res) => {
       const fromEmail = parsedUserEmailMatch ? parsedUserEmailMatch[0] : smtpTo.split(',')[0].trim();
       const mailFrom = `"${name} (via Portfolio Gateway)" <${fromEmail}>`;
 
-      await transporter.sendMail({
+      const mailOptions = {
         from: mailFrom,
         to: smtpTo,
         replyTo: email,
         subject: mailSubject,
         text: `Inquiry from: ${name}\nEmail: ${email}\nDate: ${timestamp}\n\nMessage:\n${message}`,
         html: htmlBody
-      });
+      };
+
+      // 3. Retry sending email with exponential backoff if direct dispatch fails
+      const sendMailWithRetry = async (maxRetries = 3, initialDelay = 1000) => {
+        let delay = initialDelay;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            return await transporter.sendMail(mailOptions);
+          } catch (error: any) {
+            if (attempt < maxRetries) {
+              console.warn(`[SMTP Retry Warning] Mail dispatch failed (Attempt ${attempt}/${maxRetries}). Retrying in ${delay}ms... Error: ${error?.message || error}`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              delay *= 2;
+            } else {
+              throw error;
+            }
+          }
+        }
+      };
+
+      await sendMailWithRetry();
 
       saveMessage({
         name,
