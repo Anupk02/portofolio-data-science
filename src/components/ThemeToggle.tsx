@@ -69,7 +69,7 @@ export default function ThemeToggle({ theme, toggleTheme, id }: ThemeToggleProps
         <AnimatePresence mode="wait" initial={false}>
           {isDark ? (
             <motion.div
-              key="dark-icon"
+              key={`${id || 'default'}-dark-icon`}
               initial={{ rotate: -90, scale: 0.5, opacity: 0 }}
               animate={{ rotate: 0, scale: 1, opacity: 1 }}
               exit={{ rotate: 90, scale: 0.5, opacity: 0 }}
@@ -79,7 +79,7 @@ export default function ThemeToggle({ theme, toggleTheme, id }: ThemeToggleProps
             </motion.div>
           ) : (
             <motion.div
-              key="light-icon"
+              key={`${id || 'default'}-light-icon`}
               initial={{ rotate: 90, scale: 0.5, opacity: 0 }}
               animate={{ rotate: 0, scale: 1, opacity: 1 }}
               exit={{ rotate: -90, scale: 0.5, opacity: 0 }}

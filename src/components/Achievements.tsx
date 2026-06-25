@@ -63,7 +63,7 @@ export default function Achievements() {
 
                 {/* Additional Metadata metrics */}
                 <div className="mt-6 flex flex-wrap gap-4 sm:gap-6 items-center">
-                  <div className="flex items-center gap-1.5 font-mono text-xs text-slate-500 dark:text-slate-450">
+                  <div className="flex items-center gap-1.5 font-mono text-xs text-slate-500 dark:text-slate-400">
                     <FileText className="w-4.5 h-4.5 text-blue-500" />
                     <span>Indexing: IEEE Xplore Digital Library</span>
                   </div>

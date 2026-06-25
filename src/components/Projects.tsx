@@ -55,7 +55,7 @@ export default function Projects({ onNavigate }: ProjectsProps) {
               return (
                 <div
                   key={p.slug}
-                  className={`group relative flex flex-col justify-between rounded-2xl bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 backdrop-blur-md overflow-hidden transform hover:-translate-y-1.5 transition-all duration-300 ${hoverBorderClass}`}
+                  className={`group relative flex flex-col justify-between h-full rounded-2xl bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 backdrop-blur-md overflow-hidden transform hover:-translate-y-1.5 transition-all duration-300 will-change-transform ${hoverBorderClass}`}
                 >
                   {/* Geometric top balance bar */}
                   <div className={`h-1.5 bg-gradient-to-r ${borderGradient}`} />
@@ -78,7 +78,7 @@ export default function Projects({ onNavigate }: ProjectsProps) {
                         {p.title}
                       </h3>
 
-                      <p className="font-sans text-xs sm:text-sm text-slate-500 dark:text-slate-405 mt-2.5 leading-relaxed">
+                      <p className="font-sans text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2.5 leading-relaxed">
                         {p.tagline}
                       </p>
 
@@ -100,7 +100,7 @@ export default function Projects({ onNavigate }: ProjectsProps) {
                         {p.stack.slice(0, 6).map((tech) => (
                           <span
                             key={tech}
-                            className="px-2 py-1 bg-slate-200/50 dark:bg-white/5 rounded-md text-[9px] font-mono text-slate-650 dark:text-slate-400 uppercase"
+                            className="px-2 py-1 bg-slate-200/60 dark:bg-white/5 rounded-md text-[9px] font-mono text-slate-700 dark:text-slate-300 uppercase"
                           >
                             {tech}
                           </span>
@@ -146,7 +146,7 @@ export default function Projects({ onNavigate }: ProjectsProps) {
             {otherProjects.map((p) => (
               <div
                 key={p.slug}
-                className="group relative flex flex-col justify-between p-6 rounded-2xl bg-gradient-to-b from-slate-100/40 to-slate-100/30 dark:from-slate-900/30 dark:to-slate-900/10 border border-slate-250/20 dark:border-white/[0.03] hover:border-teal-500/40 shadow-lg overflow-hidden transform hover:-translate-y-1 transition-all duration-300 lg:col-span-1"
+                className="group relative flex flex-col justify-between h-full p-6 rounded-2xl bg-gradient-to-b from-slate-100/40 to-slate-100/30 dark:from-slate-900/30 dark:to-slate-900/10 border border-slate-250/20 dark:border-white/[0.03] hover:border-teal-500/40 shadow-lg overflow-hidden transform hover:-translate-y-1 transition-all duration-300 will-change-transform lg:col-span-1"
               >
                 <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-teal-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
 
@@ -169,7 +169,7 @@ export default function Projects({ onNavigate }: ProjectsProps) {
                   {/* Highlights */}
                   <ul className="mt-4 space-y-2">
                     {p.description.slice(0, 2).map((bullet, idx) => (
-                      <li key={idx} className="flex items-start gap-1.5 text-[11px] text-slate-650 dark:text-slate-400 leading-normal font-sans">
+                      <li key={idx} className="flex items-start gap-1.5 text-[11px] text-slate-600 dark:text-slate-400 leading-normal font-sans">
                         <span className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-1.5 flex-shrink-0" />
                         <span>{bullet}</span>
                       </li>
@@ -182,7 +182,7 @@ export default function Projects({ onNavigate }: ProjectsProps) {
                     {p.stack.slice(0, 5).map((tech) => (
                       <span
                         key={tech}
-                        className="px-2 py-0.5 rounded bg-slate-105-light dark:bg-white/[0.01] border border-slate-200 dark:border-white/[0.03] font-mono text-[8px] font-medium text-slate-500 dark:text-slate-400 uppercase"
+                        className="px-2 py-0.5 rounded bg-slate-100 dark:bg-white/[0.01] border border-slate-200 dark:border-white/[0.03] font-mono text-[8px] font-medium text-slate-500 dark:text-slate-400 uppercase"
                       >
                         {tech}
                       </span>

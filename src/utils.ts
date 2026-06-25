@@ -177,6 +177,28 @@ class SciFiSoundEngine {
 
 export const sound = new SciFiSoundEngine();
 
+import { useState, useEffect } from 'react';
+
+export function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReduced(mediaQuery.matches);
+
+    const listener = (event: MediaQueryListEvent) => {
+      setReduced(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', listener);
+    return () => {
+      mediaQuery.removeEventListener('change', listener);
+    };
+  }, []);
+
+  return reduced;
+}
+
 /**
  * Convert file to base64 string
  */
@@ -187,4 +209,13 @@ export function fileToBase64(file: File): Promise<string> {
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = (error) => reject(error);
   });
+}
+
+/**
+ * Wraps an external image URL in the local /api/image-proxy endpoint to bypass CORS and hotlink blocks.
+ */
+export function getProxyUrl(url: string): string {
+  if (!url) return '';
+  if (url.startsWith('/') || url.startsWith('data:')) return url;
+  return `/api/image-proxy?url=${encodeURIComponent(url)}`;
 }

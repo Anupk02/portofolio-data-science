@@ -17,7 +17,9 @@ import {
   Award
 } from 'lucide-react';
 import { PERSONAL_INFO, SKILL_CATEGORIES } from '../data';
-import { sound } from '../utils';
+import { sound, getProxyUrl } from '../utils';
+import finalPhoto from '@/finalphoto.jpeg';
+import luffyImage from '@/luffy 34.jpg';
 
 interface AboutProps {
   // Empty, no longer needs uploader logic
@@ -710,7 +712,7 @@ export default function About({}: AboutProps) {
   return (
     <section
       id="about"
-      className="relative py-20 border-t border-slate-100/5 dark:border-white/[0.02]"
+      className="relative py-24 border-t border-slate-100/5 dark:border-white/[0.02]"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Heading */}
@@ -846,8 +848,14 @@ export default function About({}: AboutProps) {
               {/* Game Over Screen */}
               {isGameOver && (
                 <div className="absolute inset-0 bg-red-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in zoom-in-95 duration-300">
-                  <div className="w-14 h-14 rounded-full bg-red-500/20 text-red-500 border border-red-500/40 flex items-center justify-center mb-4">
-                    <Terminal className="w-7 h-7 animate-pulse" />
+                  <div className="w-24 h-24 rounded-full bg-slate-900 border border-red-500 flex items-center justify-center mb-5 overflow-hidden relative shadow-2xl shadow-red-500/30">
+                    <img 
+                      src={luffyImage}
+                      alt="Luffy Cheering"
+                      className="w-full h-full object-cover scale-110 animate-[bounce_1.5s_infinite]"
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
+                    />
                   </div>
                   <h3 className="font-sans text-2xl font-black text-white uppercase tracking-tight">
                     Compilation Aborted
@@ -1043,46 +1051,23 @@ export default function About({}: AboutProps) {
                 <div className="flex items-center gap-4">
                   {/* Miniature bot layout */}
                   <div 
-                    className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-400 flex items-center justify-center text-white text-lg relative shadow-lg shadow-cyan-500/15 overflow-hidden group/mini select-none"
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-400 flex items-center justify-center text-white relative shadow-lg shadow-cyan-500/15 overflow-hidden group/mini select-none"
                   >
-                    <svg className="w-full h-full object-cover rounded-2xl" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect width="200" height="200" fill="#F1F5F9" />
-                      <path d="M60 85C60 45 140 45 140 85" fill="#1C1917" />
-                      <path d="M85 110V135C85 140 115 140 115 135V110" fill="#FDE047" opacity="0.6" />
-                      <path d="M85 110V132H115V110H85Z" fill="#FDE047" opacity="0.8" />
-                      <path d="M84 105C84 105 100 135 116 105" fill="#F59E0B" opacity="0.25" />
-                      <circle cx="62" cy="100" r="11" fill="#FEF08A" />
-                      <circle cx="138" cy="100" r="11" fill="#FEF08A" />
-                      <path d="M65 85C65 85 64 125 100 135C136 125 135 85 135 85H65Z" fill="#FEF08A" />
-                      <path d="M60 85C60 85 70 50 100 52C130 54 140 85 140 85C140 85 130 70 115 72C100 74 95 65 80 67C65 69 60 85 60 85Z" fill="#1C1917" />
-                      <path d="M80 67C75 72 70 85 70 85C70 85 75 75 85 72C95 69 100 74 105 72" stroke="#292524" strokeWidth="2" strokeLinecap="round" />
-                      <path d="M75 90C80 88 88 89 90 92" stroke="#292524" strokeWidth="2.5" strokeLinecap="round" />
-                      <path d="M125 90C120 88 112 89 110 92" stroke="#292524" strokeWidth="2.5" strokeLinecap="round" />
-                      <ellipse cx="82" cy="97" rx="5" ry="3.5" fill="#1C1917" />
-                      <ellipse cx="118" cy="97" rx="5" ry="3.5" fill="#1C1917" />
-                      <circle cx="83.5" cy="95.5" r="1.5" fill="#FFFFFF" />
-                      <circle cx="119.5" cy="95.5" r="1.5" fill="#FFFFFF" />
-                      <path d="M97 98C97 98 100 112 103 112" stroke="#EAB308" strokeWidth="2" strokeLinecap="round" />
-                      <path d="M85 118C92 122 108 122 115 118" stroke="#D97706" strokeWidth="2" strokeLinecap="round" />
-                      <path d="M70 140L100 155L130 140V160H70V140Z" fill="#FFFFFF" />
-                      <path d="M70 140L90 152L100 132L85 132" fill="#F1F5F9" stroke="#E2E8F0" strokeWidth="1" />
-                      <path d="M130 140L110 152L100 132L115 132" fill="#F1F5F9" stroke="#E2E8F0" strokeWidth="1" />
-                      <path d="M95 145L100 135L105 145L108 185L100 195L92 185L95 145Z" fill="#2563EB" />
-                      <path d="M96 150L103 143" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
-                      <path d="M95 160L106 149" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
-                      <path d="M94 170L107 157" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
-                      <path d="M93 180L107 166" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
-                      <path d="M94 188L105 177" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
-                      <path d="M70 140L55 155L45 200H85L90 155L70 140Z" fill="#0F172A" />
-                      <path d="M130 140L145 155L155 200H115L110 155L130 140Z" fill="#0F172A" />
-                      <path d="M70 140L88 158L84 200H65L55 155L70 140Z" fill="#1E293B" />
-                      <path d="M130 140L112 158L116 200H135L145 155L130 140Z" fill="#1E293B" />
-                    </svg>
+                    <img 
+                      src={finalPhoto} 
+                      alt={PERSONAL_INFO.name} 
+                      className="w-full h-full object-cover rounded-2xl"
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400";
+                      }}
+                    />
                     <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center text-[6px] text-white">●</span>
                   </div>
                   <div className="flex flex-col flex-1">
-                    <span className="font-sans text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Anupkumar Koturwar</span>
-                    <span className="font-mono text-[9px] text-slate-500 dark:text-cyan-400 uppercase mt-0.5 leading-none">AI Agent Lead Developer</span>
+                    <span className="font-sans text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Anupkumar Koturwar</span>
+                    <span className="font-mono text-[9px] sm:text-[10px] text-slate-500 dark:text-cyan-400 uppercase mt-0.5 leading-none">AI Agent Lead Developer</span>
                     <span className="font-sans text-[10px] text-slate-400 mt-1 lines-clamp-2 leading-none">IEEE Otcon NLP Publisher</span>
                   </div>
                 </div>

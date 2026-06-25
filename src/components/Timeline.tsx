@@ -26,7 +26,7 @@ export default function Timeline() {
                   <div className="absolute -left-[31px] sm:-left-[39px] top-1 w-[11px] h-[11px] rounded-full bg-slate-900 border-2 border-blue-500 group-hover:bg-blue-400 group-hover:scale-125 shadow-[0_0_8px_rgba(59,130,246,0.5)] transition-all duration-300" />
 
                   {/* Card Container */}
-                  <div className="p-5 rounded-2xl bg-slate-100/40 dark:bg-slate-900/10 hover:bg-slate-100/60 dark:hover:bg-slate-900/30 border border-slate-200/50 dark:border-white/[0.03] hover:border-blue-500/20 shadow-md transform hover:-translate-x-0.5 transition-all duration-300">
+                  <div className="p-5 h-full rounded-2xl bg-slate-100/40 dark:bg-slate-900/10 hover:bg-slate-100/60 dark:hover:bg-slate-900/30 border border-slate-200/50 dark:border-white/[0.03] hover:border-blue-500/20 shadow-md transform hover:-translate-x-0.5 transition-all duration-300">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2.5">
                       <span className="font-sans text-xs font-semibold text-blue-500 bg-blue-500/10 px-2.5 py-0.5 rounded-full w-fit">
                         {cert.issuer}
@@ -42,7 +42,7 @@ export default function Timeline() {
                     </h3>
 
                     {cert.details && (
-                      <p className="mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-450 leading-relaxed">
+                      <p className="mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                         {cert.details}
                       </p>
                     )}
@@ -71,14 +71,14 @@ export default function Timeline() {
                   <div
                     key={edu.degree}
                     id={`edu-item-${idx}`}
-                    className="p-5 rounded-2xl bg-slate-150-light dark:bg-white/[0.01] border border-slate-200 dark:border-white/[0.03] shadow-md hover:border-teal-500/20 transition-all flex flex-col gap-3"
+                    className="p-5 h-full rounded-2xl bg-slate-50 dark:bg-white/[0.01] border border-slate-200 dark:border-white/[0.03] shadow-md hover:border-teal-500/20 transition-all flex flex-col gap-3"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/[0.02] flex items-center justify-center border border-slate-200/50 dark:border-white/[0.04]">
                         <GraduationCap className="w-5 h-5 text-teal-400" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-sans font-bold text-sm text-slate-850 dark:text-slate-200">
+                        <span className="font-sans font-bold text-sm text-slate-800 dark:text-slate-200">
                           {edu.institution}
                         </span>
                         <span className="font-mono text-[9px] text-slate-400 uppercase tracking-widest mt-0.5">
@@ -103,7 +103,7 @@ export default function Timeline() {
             </div>
 
             {/* General technical interest box at bottom */}
-            <div className="mt-12 p-5 rounded-2xl bg-gradient-to-r from-blue-500/5 via-violet-500/5 to-teal-500/5 border border-slate-350/[0.05] dark:border-white/[0.02]">
+            <div className="mt-12 p-5 rounded-2xl bg-gradient-to-r from-blue-500/5 via-violet-500/5 to-teal-500/5 border border-slate-200 dark:border-white/[0.02]">
               <div className="flex items-center gap-2 text-violet-500 mb-3">
                 <BookOpen className="w-4.5 h-4.5" />
                 <span className="font-mono text-[10px] font-bold uppercase tracking-widest">

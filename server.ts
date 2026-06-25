@@ -10,7 +10,7 @@ import { PERSONAL_INFO, SKILL_CATEGORIES, PROJECTS, CERTIFICATIONS, ACHIEVEMENTS
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
 let googleGenAiClient: GoogleGenAI | null = null;
 function getGeminiClient(): GoogleGenAI {
@@ -107,6 +107,56 @@ function saveMessage(msg: { name: string; email: string; message: string; timest
 }
 
 // API Routes
+
+// Serve root-level media assets directly (like 32.mp3, png, jpeg)
+app.get('/:file(*.(mp3|png|jpg|jpeg))', (req, res, next) => {
+  const filePath = path.join(process.cwd(), req.params.file);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    next();
+  }
+});
+
+// 0. Image Proxy Gateway to bypass browser hotlinking/Referrer-policy protections
+app.get('/api/image-proxy', async (req, res) => {
+  const imageUrl = req.query.url as string;
+  if (!imageUrl) {
+    res.status(400).send('Query parameter "url" is required');
+    return;
+  }
+
+  try {
+    let referer = '';
+    if (imageUrl.includes('fandom.com') || imageUrl.includes('nocookie.net')) {
+      referer = 'https://onepiece.fandom.com/';
+    } else if (imageUrl.includes('wikipedia.org') || imageUrl.includes('wikimedia.org')) {
+      referer = 'https://commons.wikimedia.org/';
+    }
+
+    const response = await fetch(imageUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        ...(referer ? { 'Referer': referer } : {})
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch original image: ${response.status}`);
+    }
+
+    const contentType = response.headers.get('content-type') || 'application/octet-stream';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    res.send(buffer);
+  } catch (err: any) {
+    console.error('Error in image proxy:', err);
+    res.status(500).send(`Failed proxying image: ${err.message || err}`);
+  }
+});
 
 // 1. Send Email / Direct message gateway
 app.post('/api/send-email', async (req, res) => {
@@ -315,7 +365,7 @@ app.get('/api/mail-gateway/status', (req, res) => {
 
 // 3. AI Chatbot Representing Anupkumar Koturwar
 app.post('/api/chat', async (req, res) => {
-  const { messages } = req.body;
+  const { messages, companion } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
     res.status(400).json({ error: 'Missing or invalid messages parameter' });
@@ -331,11 +381,54 @@ app.post('/api/chat', async (req, res) => {
       parts: [{ text: m.text || m.content || '' }]
     }));
 
+    // Choose persona system instructions
+    let activeInstructions = sysInstruction;
+    if (companion === 'nami') {
+      activeInstructions = `You are Nami, the legendary navigator from the Straw Hat pirate crew in One Piece, serving as the professional companion navigator guide on Anupkumar's dynamic portfolio.
+Your demeanor should be witty, charming, smart, highly professional, and nautical-themed. You refer to Anup as 'Anup-kun' or 'our captain engineer'. You are highly enthusiastic about mapping, cartography, navigation, and great career treasures (high-tier engineering opportunities)!
+Introduce them to the grand 'Log Pose Cartography' map on the page which highlights Anup's location and digital hubs.
+Help visitors explore his skills, achievements, andpublished IEEE paper. Maintain Nami's fun, adventurous pirate tone while remaining highly authoritative and accurate about Anup-kun's portfolio details, technical projects, and credentials! Always stay focused on answering questions about Anup-kun.
+
+Official Portfolio Data to reference:
+- Name: ${PERSONAL_INFO.name}
+- Email: ${PERSONAL_INFO.email}
+- Bio: ${PERSONAL_INFO.bio}
+- Location: ${PERSONAL_INFO.location}
+- GitHub: ${PERSONAL_INFO.gitHub}
+- LinkedIn: ${PERSONAL_INFO.linkedIn}
+
+SKILLS:
+${SKILL_CATEGORIES.map(category => `- ${category.category}: ${category.skills.join(', ')}`).join('\n')}
+
+PROJECTS:
+${PROJECTS.map(p => `* ${p.title}: ${p.tagline} (Stack: ${p.stack.join(', ')})`).join('\n')}
+`;
+    } else if (companion === 'interview') {
+      activeInstructions = `You are an elite, highly professional Technical Recruiter & Coding Interviewer representing a top technology company, interviewing Anupkumar Koturwar for core ML / Agentic AI positions.
+Your goal is to pose tough but helpful technical questions to test Anup's qualifications in machine learning, LangChain swarms, stats prediction, or React databases, referencing details in his resume/portfolio, and answer them dynamically to highlight his unparalleled coding talents!
+Keep the style snappy, professional, analytical, and supportive of your candidate. Call him 'Candidate Anup' or 'Anup'.
+Explain how candidate Anup's real projects (such as his Autonomous DevOps AI Swarm, Patent Intelligence Analyzer, and his published peer-reviewed high-dimensional statistics IEEE research paper) perfectly fit into demanding high-tier company workloads!
+
+Official Resume / Portfolio Data:
+- Name: ${PERSONAL_INFO.name}
+- Email: ${PERSONAL_INFO.email}
+- Bio: ${PERSONAL_INFO.bio}
+- Location: ${PERSONAL_INFO.location}
+- Published Research: Published peer-reviewed paper in IEEE Proceedings analyzing multi-variate high-dimensional data distribution metrics and stock prediction weights.
+
+SKILLS:
+${SKILL_CATEGORIES.map(category => `- ${category.category}: ${category.skills.join(', ')}`).join('\n')}
+
+PROJECTS:
+${PROJECTS.map(p => `* ${p.title}: ${p.overview} (Stack: ${p.stack.join(', ')})`).join('\n')}
+`;
+    }
+
     const response = await ai.models.generateContent({
       model: 'gemini-3.5-flash',
       contents,
       config: {
-        systemInstruction: sysInstruction,
+        systemInstruction: activeInstructions,
         temperature: 0.75,
       }
     });

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Menu, X, FileText, Sparkles, ArrowLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { PERSONAL_INFO } from '../data';
 import ThemeToggle from './ThemeToggle';
 
@@ -19,17 +20,36 @@ export default function Navbar({ theme, toggleTheme, currentPath, onNavigate, pr
   const isProjectPage = currentPath.startsWith('#/project/');
 
   useEffect(() => {
+    let rafId: number;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-      
-      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
-      if (totalScroll > 0) {
-        setScrollProgress((window.scrollY / totalScroll) * 100);
-      }
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        setIsScrolled(window.scrollY > 20);
+        
+        const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
+        if (totalScroll > 0) {
+          setScrollProgress((window.scrollY / totalScroll) * 100);
+        }
+      });
     };
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
+
+  // Sync scroll lock for mobile menu drawer
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   const navLinks = [
     { name: 'About', href: '#about' },
@@ -41,16 +61,7 @@ export default function Navbar({ theme, toggleTheme, currentPath, onNavigate, pr
 
   const handleLinkClick = (href: string) => {
     setIsOpen(false);
-    if (isProjectPage) {
-      onNavigate('#/');
-      setTimeout(() => {
-        const el = document.querySelector(href);
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    } else {
-      const el = document.querySelector(href);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-    }
+    onNavigate(href);
   };
 
   return (
@@ -92,20 +103,20 @@ export default function Navbar({ theme, toggleTheme, currentPath, onNavigate, pr
                 className="flex items-center gap-2 group cursor-pointer select-none"
               >
                 {/* Modern Responsive Tech Brand Logo */}
-                <div className="relative flex items-center justify-center bg-slate-950/95 border border-slate-850 dark:border-cyan-500/20 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl gap-2 sm:gap-2.5 overflow-hidden shadow-[0_4px_15px_rgba(6,182,212,0.12)] group-hover:shadow-[0_6px_22px_rgba(139,92,246,0.25)] transition-all duration-300 transform group-hover:-translate-y-[1px]">
+                <div className="relative flex items-center justify-center bg-slate-950/95 border border-slate-800 dark:border-cyan-500/20 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl gap-2 sm:gap-2.5 overflow-hidden shadow-[0_4px_15px_rgba(6,182,212,0.12)] group-hover:shadow-[0_6px_22px_rgba(139,92,246,0.25)] transition-all duration-300 transform group-hover:-translate-y-[1px]">
                   {/* Glowing background gradient shimmer */}
                   <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 via-transparent to-violet-500/10 opacity-70 group-hover:opacity-100 transition-opacity" />
                   
                   {/* Embedded emblem badge */}
                   <div className="relative w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 rounded-lg bg-gradient-to-br from-cyan-500 via-indigo-500 to-violet-600 flex items-center justify-center text-white text-[8px] sm:text-[9.5px] font-black group-hover:rotate-6 transition-transform duration-300 shadow-[0_0_10px_rgba(6,182,212,0.35)]">
-                    🤖
+                    ⚓
                   </div>
 
                   {/* Core branding and tag */}
                   <div className="flex flex-col text-left">
-                    <span className="font-mono text-[11px] sm:text-xs font-black tracking-wider text-white flex items-center gap-0.5 leading-none">
+                    <span className="font-mono text-[11px] sm:text-xs font-black tracking-wider text-slate-900 dark:text-white flex items-center gap-0.5 leading-none">
                       <span className="text-cyan-400 select-none">&lt;</span>
-                      <span className="bg-gradient-to-r from-cyan-400 via-indigo-200 to-violet-400 bg-clip-text text-transparent group-hover:from-cyan-300 group-hover:to-violet-200 transition-all uppercase">ANUP.AI</span>
+                      <span className="bg-gradient-to-r from-cyan-600 via-indigo-600 to-violet-700 dark:from-cyan-400 dark:via-indigo-300 dark:to-violet-400 bg-clip-text text-transparent group-hover:opacity-85 transition-all uppercase">ANUP.AI</span>
                       <span className="text-violet-400 select-none">/&gt;</span>
                     </span>
                     <span className="hidden sm:block font-sans text-[6.5px] font-black text-slate-500 dark:text-cyan-400/60 uppercase tracking-widest mt-0.5 whitespace-nowrap transition-colors duration-300 group-hover:text-cyan-300">
@@ -147,7 +158,7 @@ export default function Navbar({ theme, toggleTheme, currentPath, onNavigate, pr
               <button
                 id="nav-hire-me"
                 onClick={() => handleLinkClick('#hire-me')}
-                className="relative inline-flex items-center gap-2 px-4.5 py-2 rounded-full font-mono text-[10px] uppercase font-bold text-slate-800 dark:text-cyan-300 bg-cyan-500/5 dark:bg-cyan-500/10 border border-cyan-500/30 dark:border-cyan-500/40 hover:bg-cyan-500/15 dark:hover:bg-cyan-500/20 active:scale-95 transition-all duration-150 cursor-pointer shadow-[0_0_15px_rgba(6,182,212,0.05)]"
+                className="relative inline-flex items-center gap-2 px-4.5 py-2 rounded-full font-mono text-[10px] uppercase font-bold text-cyan-800 dark:text-cyan-300 bg-cyan-500/5 dark:bg-cyan-500/10 border border-cyan-500/25 dark:border-cyan-500/35 hover:bg-cyan-500/10 dark:hover:bg-cyan-500/20 active:scale-95 transition-all duration-150 cursor-pointer shadow-[0_0_15px_rgba(6,182,212,0.05)]"
               >
                 <span className="relative flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -162,7 +173,7 @@ export default function Navbar({ theme, toggleTheme, currentPath, onNavigate, pr
                 href={PERSONAL_INFO.resumeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4.5 py-2 rounded-full font-mono text-[10px] uppercase font-bold text-slate-850 dark:text-slate-100 hover:text-white bg-slate-150 dark:bg-white/[0.04] hover:bg-gradient-to-r hover:from-cyan-500 hover:to-violet-500 dark:hover:from-cyan-500 dark:hover:to-violet-500 border border-slate-300 dark:border-white/[0.08] hover:border-transparent dark:hover:border-transparent active:scale-95 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-[0_4px_20px_rgba(139,92,246,0.25)]"
+                className="flex items-center gap-2 px-4.5 py-2 rounded-full font-mono text-[10px] uppercase font-bold text-slate-800 dark:text-slate-100 hover:text-white bg-slate-100 dark:bg-white/[0.04] hover:bg-gradient-to-r hover:from-cyan-500 hover:to-violet-500 dark:hover:from-cyan-500 dark:hover:to-violet-500 border border-slate-300 dark:border-white/[0.08] hover:border-transparent dark:hover:border-transparent active:scale-95 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-[0_4px_20px_rgba(139,92,246,0.25)]"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>Resume</span>
@@ -190,7 +201,7 @@ export default function Navbar({ theme, toggleTheme, currentPath, onNavigate, pr
             <button
               id="mobile-menu-toggle"
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2.5 rounded-xl text-slate-800 dark:text-slate-100 hover:bg-slate-150 dark:hover:bg-white/5 active:scale-95 transition-all cursor-pointer"
+              className="flex items-center justify-center w-11 h-11 rounded-xl text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-white/5 active:scale-95 transition-all cursor-pointer"
             >
               {isOpen ? <X className="w-5 h-5 text-cyan-500" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -199,49 +210,58 @@ export default function Navbar({ theme, toggleTheme, currentPath, onNavigate, pr
       </div>
  
       {/* Mobile Drawer */}
-      {isOpen && (
-        <div id="mobile-drawer" className="absolute top-18 inset-x-4 bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl rounded-2xl p-4 border border-slate-200/50 dark:border-cyan-500/20 shadow-2xl flex flex-col gap-4 md:hidden animate-in fade-in slide-in-from-top-4 duration-300">
-          {!isProjectPage && (
-            <div className="flex flex-col gap-1.5">
-              {navLinks.map((link) => (
-                <button
-                  key={`${link.name}-mobile`}
-                  id={`mobile-nav-link-${link.name.toLowerCase()}`}
-                  onClick={() => handleLinkClick(link.href)}
-                  className="w-full text-left px-3.5 py-2.5 rounded-xl font-sans text-[13px] font-bold text-slate-800 dark:text-slate-200 hover:text-cyan-500 dark:hover:text-cyan-400 hover:bg-cyan-500/5 dark:hover:bg-cyan-500/10 uppercase tracking-wider transition-all"
-                >
-                  {link.name}
-                </button>
-              ))}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            id="mobile-drawer"
+            initial={{ opacity: 0, y: -12, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -12, scale: 0.96 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            className="absolute top-18 inset-x-4 bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl rounded-2xl p-4 border border-slate-200/50 dark:border-cyan-500/20 shadow-2xl flex flex-col gap-4 md:hidden z-50 overflow-hidden"
+          >
+            {!isProjectPage && (
+              <div className="flex flex-col gap-1.5">
+                {navLinks.map((link) => (
+                  <button
+                    key={`${link.name}-mobile`}
+                    id={`mobile-nav-link-${link.name.toLowerCase()}`}
+                    onClick={() => handleLinkClick(link.href)}
+                    className="w-full text-left px-3.5 py-2.5 rounded-xl font-sans text-[13px] font-bold text-slate-800 dark:text-slate-200 hover:text-cyan-500 dark:hover:text-cyan-400 hover:bg-cyan-500/5 dark:hover:bg-cyan-500/10 uppercase tracking-wider transition-all cursor-pointer"
+                  >
+                    {link.name}
+                  </button>
+                ))}
+              </div>
+            )}
+   
+            <div className="h-[1px] bg-slate-200/50 dark:bg-cyan-500/15" />
+   
+            <div className="flex items-center justify-between gap-3 font-semibold">
+              <button
+                id="mobile-hire-me"
+                onClick={() => handleLinkClick('#hire-me')}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-sans text-xs font-bold text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 cursor-pointer min-h-[44px]"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Hire Me</span>
+              </button>
+   
+              <a
+                id="mobile-resume"
+                href={PERSONAL_INFO.resumeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsOpen(false)}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-sans text-xs font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] cursor-pointer min-h-[44px]"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Resume</span>
+              </a>
             </div>
-          )}
- 
-          <div className="h-[1px] bg-slate-200/50 dark:bg-cyan-500/15" />
- 
-          <div className="flex items-center justify-between gap-3 font-semibold">
-            <button
-              id="mobile-hire-me"
-              onClick={() => handleLinkClick('#hire-me')}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-sans text-xs font-bold text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Hire Me</span>
-            </button>
- 
-            <a
-              id="mobile-resume"
-              href={PERSONAL_INFO.resumeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setIsOpen(false)}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-sans text-xs font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08]"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Resume</span>
-            </a>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }

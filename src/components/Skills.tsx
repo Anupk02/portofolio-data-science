@@ -91,6 +91,61 @@ const CATEGORY_THEMES = [
   },
 ];
 
+interface RpgSkillItem {
+  name: string;
+  level: number;
+  tagline: string;
+  color: string;
+}
+
+const RpgSkillRow: React.FC<{ skill: RpgSkillItem }> = ({ skill }) => {
+  const [hovered, setHovered] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setHovered(true);
+    }, 450);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div 
+      onMouseEnter={() => {
+        setHovered(true);
+        sound.playHover();
+      }}
+      onMouseLeave={() => setHovered(false)}
+      className="group relative bg-slate-100/30 dark:bg-slate-900/40 border border-slate-200/50 dark:border-white/5 hover:border-cyan-500/35 p-3.5 rounded-2xl transition-all duration-300 hover:translate-x-1 cursor-pointer"
+    >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-2 select-none">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[9px] text-cyan-500 dark:text-cyan-400 font-bold bg-cyan-100/60 dark:bg-cyan-950/40 border border-cyan-300/30 dark:border-cyan-500/20 px-1.5 py-0.5 rounded">
+            LV.{skill.level}
+          </span>
+          <span className="font-sans font-extrabold text-[12.5px] text-slate-800 dark:text-slate-100 group-hover:text-cyan-500 dark:group-hover:text-cyan-400 transition-colors uppercase">
+            {skill.name}
+          </span>
+          {hovered && (
+            <span className="font-mono text-[8.5px] font-bold text-amber-600 dark:text-amber-500 animate-pulse bg-amber-500/10 px-1.5 py-0.5 border border-amber-500/20 rounded">
+              ⚡ LIVE UNLOCKED CLASS OVERDRIVE
+            </span>
+          )}
+        </div>
+        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 font-sans leading-tight italic max-w-sm text-left sm:text-right">
+          {skill.tagline}
+        </span>
+      </div>
+
+      <div className="h-2 bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden relative">
+        <div 
+          className={`h-full bg-gradient-to-r ${skill.color} rounded-full transition-all duration-1000`}
+          style={{ width: hovered ? `${skill.level}%` : '8%' }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function Skills() {
   const [activeCategoryIdx, setActiveCategoryIdx] = useState<number>(1); // Default to agentic ai for max initial high-vibe impact!
 
@@ -348,7 +403,7 @@ export default function Skills() {
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
             <span>TECHNICAL_MATRIX</span>
           </span>
-          <h2 className="font-sans text-3xl sm:text-4.5xl font-extrabold tracking-tight text-slate-8 w-900 dark:text-slate-100 mt-2.5 transition-colors">
+          <h2 className="font-sans text-3xl sm:text-4.5xl font-extrabold tracking-tight text-slate-800 dark:text-slate-100 mt-2.5 transition-colors">
             Core Competencies & Stack
           </h2>
           <p className="mt-4 text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-mono max-w-2xl mx-auto leading-relaxed">
@@ -370,7 +425,7 @@ export default function Skills() {
                   setActiveCategoryIdx(index);
                 }}
                 onMouseEnter={() => sound.playHover()}
-                className={`text-left p-5 flex flex-col justify-between rounded-2xl transition-all duration-300 border backdrop-blur-xl relative overflow-hidden group cursor-pointer select-none min-h-[160px] ${
+                className={`text-left p-5 flex flex-col justify-between h-full rounded-2xl transition-all duration-300 border backdrop-blur-xl relative overflow-hidden group cursor-pointer select-none min-h-[160px] ${
                   isActive 
                     ? `bg-slate-900 dark:bg-slate-900/95 shadow-lg ${theme.activeGlow} scale-[1.01]` 
                     : `bg-white/40 dark:bg-white/[0.01] hover:bg-slate-100/50 dark:hover:bg-white/[0.02] ${theme.borderColor} shadow-sm`
@@ -436,6 +491,29 @@ export default function Skills() {
               </button>
             );
           })}
+        </div>
+
+        {/* Real-time RPG Skill Tree Matrix */}
+        <div className="mt-12 mb-10 p-5 sm:p-6 bg-slate-50/60 dark:bg-slate-900/40 border border-slate-200/50 dark:border-white/5 rounded-3xl backdrop-blur-md max-w-5xl mx-auto select-none">
+          <div className="flex items-center gap-2.5 mb-5 border-b border-slate-200/40 dark:border-white/5 pb-3">
+            <span className="text-xl leading-none">🎮</span>
+            <div>
+              <h4 className="font-sans font-extrabold text-[13.5px] text-slate-800 dark:text-slate-100 uppercase tracking-wider">RPG Skill Tree Matrix</h4>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">Hover to trigger class multipliers and map active leveling ratios!</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { name: 'Python Lv.85', level: 85, tagline: 'Local matrix calculations, statistical modelling & multi-threading loops', color: 'from-amber-400 to-yellow-500' },
+              { name: 'Django Lv.75', level: 75, tagline: 'Secured ACID database integrations, ORM models & REST endpoints scaling', color: 'from-emerald-400 to-green-500' },
+              { name: 'React Lv.70', level: 70, tagline: 'Interactive state machines, responsive frame coordinates & canvas math layers', color: 'from-cyan-400 to-blue-500' },
+              { name: 'Docker Lv.60', level: 60, tagline: 'Localized model sandboxing, private networks & micro-service configurations', color: 'from-violet-400 to-indigo-500' },
+              { name: 'Machine Learning Lv.55', level: 55, tagline: 'Autonomous CrewAI task flows, vector databases & regression predictive anomalies', color: 'from-rose-450 to-pink-500' }
+            ].map((skillData, idx) => (
+              <RpgSkillRow key={idx} skill={skillData} />
+            ))}
+          </div>
         </div>
 
         {/* Dynamic Sandbox Simulator Terminal Panel */}

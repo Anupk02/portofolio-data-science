@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageSquare, Send, X, RefreshCw, Bot, Sparkles, User, HelpCircle, CornerDownLeft } from 'lucide-react';
+import { MessageSquare, Send, X, RefreshCw, Bot, Sparkles, User, HelpCircle, CornerDownLeft, Volume2, VolumeX, Compass } from 'lucide-react';
 import { sound } from '../utils';
+import luffyImage from '@/luffy 34.jpg';
 
 interface ChatMessage {
   id: string;
@@ -19,6 +20,19 @@ const CONVERSATION_STARTERS = [
   { label: '💼 How can I hire or contact you?', query: 'I would like to hire or contact you. What are the best ways?' }
 ];
 
+const NAMI_STARTERS = [
+  { label: '🗺️ Map our next journey!', query: 'Nami, describe the travel locations on the Log Pose Map!' },
+  { label: '💰 Show me the Career Treasure!', query: 'Nami, where are the secret achievements and career treasures hidden?' },
+  { label: '🍊 Tell me about Anup-kun\'s bounty!', query: 'What is candidate Anup-kun\'s professional coding bounty value?' }
+];
+
+const INTERVIEW_STARTERS = [
+  { label: '🔥 Why should we hire Anup?', query: 'Why should we hire Anup over other candidates?' },
+  { label: '🧠 Explain Plagiarism project', query: 'Describe Anup\'s Plagiarism Detector and its advanced ML architecture.' },
+  { label: '⚡ What technology has he used?', query: 'Provide a breakdown of the specific languages, databases, and AI frameworks Anup has mastered.' },
+  { label: '📝 Ask a tough coding question!', query: 'Pose a technical prompt to test candidate Anup\'s understanding of agent workflows, and demonstrate his answer.' }
+];
+
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
@@ -34,8 +48,105 @@ export default function Chatbot() {
   const [isLoading, setIsLoading] = useState(false);
   const [showTip, setShowTip] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [companionMode, setCompanionMode] = useState<'double' | 'nami' | 'interview'>('double');
+  
+  // Real-time Speech Synthesis Vocalization State
+  const [isTtsEnabled, setIsTtsEnabled] = useState(() => {
+    return localStorage.getItem('chatbot_tts_enabled') !== 'false';
+  });
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
+
+  // Stop vocalizer when chatbot closes or TTS is toggled off
+  useEffect(() => {
+    if (!isOpen || !isTtsEnabled) {
+      handleStopSpeaking();
+    }
+  }, [isOpen, isTtsEnabled]);
+
+  const handleStopSpeaking = () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsSpeaking(false);
+  };
+
+  const handleSpeakText = (text: string) => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+
+    // Remove markdown symbols from speech
+    const cleanedText = text
+      .replace(/[#*`_-]/g, ' ')
+      .replace(/\[.*?\]/g, ' ')
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleanedText);
+    const voices = window.speechSynthesis.getVoices();
+    
+    // Choose professional english voice if available
+    const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Zira') || v.name.includes('Microsoft'))) || voices.find(v => v.lang.startsWith('en'));
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    speechUtteranceRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleToggleTts = () => {
+    const nextVal = !isTtsEnabled;
+    setIsTtsEnabled(nextVal);
+    localStorage.setItem('chatbot_tts_enabled', String(nextVal));
+    sound.playClick();
+    if (!nextVal) {
+      handleStopSpeaking();
+    }
+  };
+
+  const handleToggleCompanion = () => {
+    let nextMode: 'double' | 'nami' | 'interview' = 'double';
+    if (companionMode === 'double') {
+      nextMode = 'nami';
+    } else if (companionMode === 'nami') {
+      nextMode = 'interview';
+    } else {
+      nextMode = 'double';
+    }
+    setCompanionMode(nextMode);
+    handleStopSpeaking();
+    sound.playClick();
+    
+    // Auto populate the stream with mode-specific greeting
+    if (nextMode === 'nami') {
+      setMessages([{
+        id: 'nami-greeting',
+        role: 'assistant',
+        text: "⚓ Ahoy, adventurer! I'm Nami, the Straw Hat Navigator! 👒🍊\n\nAnup-kun hired me as his cyber-navigator to map this amazing terminal portal! I have fully synchronized with his data science research, IEEE publications, and multi-agent algorithms.\n\nClick the **Log Pose Cartography** sector on the page to set sail with the Thousand Sunny, or ask me any questions about our master shipwright's credentials!",
+        timestamp: new Date()
+      }]);
+    } else if (nextMode === 'interview') {
+      setMessages([{
+        id: 'interview-greeting',
+        role: 'assistant',
+        text: "🎙️ Welcome to Interview Me Mode! I am your Technical Interview Representative. 👔\n\nI will act as a rigorous technical recruiter or interviewer. You can test Anupkumar Koturwar's engineering fit here!\n\nClick any topic below or ask me any technical vetting question (e.g. 'How does Anup prevent data leakage?', 'Why should I hire Anup?') to begin!",
+        timestamp: new Date()
+      }]);
+    } else {
+      setMessages([{
+        id: 'greeting',
+        role: 'assistant',
+        text: "Hi there! I'm Anup's AI Representative. 🧠\n\nI built this chatbot to talk precisely like myself in the first person! You can ask me anything about my data science projects, multi-agent portfolios, machine learning certifications, or IEEE publications. What would you like to explore today?",
+        timestamp: new Date()
+      }]);
+    }
+  };
 
   // Sync profile photo from local storage on load
   useEffect(() => {
@@ -108,7 +219,10 @@ export default function Chatbot() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ messages: historyPayload })
+        body: JSON.stringify({ 
+          messages: historyPayload,
+          companion: companionMode
+        })
       });
 
       const data = await res.json();
@@ -121,6 +235,9 @@ export default function Chatbot() {
           timestamp: new Date()
         }]);
         sound.playSuccess();
+        if (isTtsEnabled) {
+          handleSpeakText(data.text);
+        }
       } else {
         throw new Error(data.error || 'Server responded with an error');
       }
@@ -194,11 +311,12 @@ export default function Chatbot() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
+    <div className="fixed bottom-4 md:bottom-6 right-4 md:right-6 z-[60] font-sans">
       <AnimatePresence>
         {/* Hover tip invite */}
         {showTip && !isOpen && (
           <motion.div
+            key="chatbot-hover-invite"
             initial={{ opacity: 0, y: 15, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
@@ -232,6 +350,7 @@ export default function Chatbot() {
         {/* Chat window panel */}
         {isOpen && (
           <motion.div
+            key="chatbot-window-panel"
             initial={{ opacity: 0, y: 30, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -239,36 +358,98 @@ export default function Chatbot() {
             className="absolute bottom-16 right-0 w-[420px] max-w-[calc(100vw-32px)] h-[580px] max-h-[82vh] rounded-3xl bg-slate-950/95 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden backdrop-blur-xl z-40"
           >
             {/* Header section with Anup's custom layout */}
-            <div className="p-4 bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border-b border-white/10 flex items-center justify-between">
+            <div className={`p-4 border-b flex items-center justify-between transition-colors ${
+              companionMode === 'nami' 
+                ? 'bg-gradient-to-r from-amber-950/40 via-slate-950 to-amber-950/40 border-amber-500/20' 
+                : companionMode === 'interview'
+                ? 'bg-gradient-to-r from-emerald-950/40 via-slate-950 to-emerald-950/40 border-emerald-500/20'
+                : 'bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border-white/10'
+            }`}>
               <div className="flex items-center gap-3">
-                <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-400 p-[1px]">
+                <div className={`relative w-12 h-12 rounded-xl p-[1px] bg-gradient-to-br ${
+                  companionMode === 'nami' ? 'from-amber-400 to-orange-500' : companionMode === 'interview' ? 'from-emerald-400 to-teal-400' : 'from-cyan-500 to-teal-400'
+                }`}>
                   <div className="w-full h-full rounded-xl bg-slate-900 overflow-hidden flex items-center justify-center">
-                    {profilePhoto ? (
-                      <img src={profilePhoto} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    {companionMode === 'nami' ? (
+                       <span className="text-2xl select-none leading-none">👒</span>
+                    ) : companionMode === 'interview' ? (
+                       <span className="text-2xl select-none leading-none">🎙️</span>
+                    ) : profilePhoto ? (
+                      <img src={profilePhoto} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900">
-                        <Bot className="w-5 h-5 text-cyan-400" />
+                      <img src={luffyImage} className="w-full h-full object-cover rounded-xl scale-110" referrerPolicy="no-referrer" loading="lazy" />
+                    )}
+                  </div>
+                  <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-slate-900 flex items-center justify-center ${
+                    companionMode === 'nami' ? 'bg-amber-500 animate-pulse' : companionMode === 'interview' ? 'bg-emerald-500 animate-pulse' : 'bg-green-500'
+                  }`} />
+                </div>
+                
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-sans font-extrabold text-xs tracking-wider text-slate-200 uppercase">
+                      {companionMode === 'nami' ? 'Nami (Straw Hat Nav)' : companionMode === 'interview' ? 'Technical Interviewer' : 'Anup AI Double'}
+                    </h3>
+                    {isSpeaking && (
+                      <div className="flex items-center gap-0.5 h-3 px-1 select-none">
+                        <span className="w-0.5 bg-green-400 animate-[pulse_0.4s_infinite_100ms] rounded-full h-2" />
+                        <span className="w-0.5 bg-green-500 animate-[pulse_0.3s_infinite_200ms] rounded-full h-3" />
+                        <span className="w-0.5 bg-cyan-400 animate-[pulse_0.5s_infinite_300ms] rounded-full h-1.5" />
+                        <span className="w-0.5 bg-cyan-500 animate-[pulse_0.4s_infinite_400ms] rounded-full h-2.5" />
+                        <span className="w-0.5 bg-emerald-400 animate-[pulse_0.3s_infinite_500ms] rounded-full h-3.5" />
                       </div>
                     )}
                   </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-slate-900 flex items-center justify-center" />
-                </div>
-                <div className="flex flex-col">
-                  <h3 className="font-sans font-extrabold text-xs tracking-wider text-slate-200 uppercase">Anup AI Double</h3>
                   <div className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                    <span className="font-mono text-[9px] text-cyan-400/80 uppercase tracking-widest">NEURAL_LIVE_STREAM</span>
+                    <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                      companionMode === 'nami' ? 'bg-amber-400' : companionMode === 'interview' ? 'bg-emerald-400' : 'bg-cyan-400'
+                    }`} />
+                    <span className={`font-mono text-[9px] uppercase tracking-widest ${
+                      companionMode === 'nami' ? 'text-amber-400/80' : companionMode === 'interview' ? 'text-emerald-400/80' : 'text-cyan-400/80'
+                    }`}>
+                      {isSpeaking ? 'VOCAL_AUDIO_SPEAKING' : companionMode === 'nami' ? 'GRAND_LINE_NAV_LINK' : companionMode === 'interview' ? 'INTERVIEW_VETTING_ACTIVE' : 'NEURAL_LIVE_STREAM'}
+                    </span>
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-1.5">
+                {/* Companion Selector Toggle Button */}
+                <button
+                  onClick={handleToggleCompanion}
+                  title={companionMode === 'double' ? "Switch to Nami the Navigator Mode Guide" : companionMode === 'nami' ? "Switch to Technical Interview Mode" : "Switch back to Anup's AI Double"}
+                  onMouseEnter={() => sound.playHover()}
+                  className={`p-2 rounded-xl border transition-all cursor-pointer hover:scale-105 active:scale-95 ${
+                    companionMode === 'nami' 
+                      ? 'bg-amber-500/10 border-amber-500/35 text-amber-400 hover:bg-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.2)]' 
+                      : companionMode === 'interview'
+                      ? 'bg-emerald-500/10 border-emerald-500/35 text-emerald-400 hover:bg-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]'
+                      : 'bg-white/[0.04] border-white/5 text-slate-400 hover:text-white hover:bg-white/[0.08]'
+                  }`}
+                >
+                  <Compass className={`w-3.5 h-3.5 ${companionMode === 'nami' ? 'animate-[spin_4s_linear_infinite]' : companionMode === 'interview' ? 'animate-[pulse_1.5s_infinite]' : ''}`} />
+                </button>
+
+                {/* Voice Synthesis Vocal Mode Toggle */}
+                <button
+                  onClick={handleToggleTts}
+                  title={isTtsEnabled ? "Disable Voice Reader (Mute)" : "Enable Voice Reader (Vocal Speak)"}
+                  onMouseEnter={() => sound.playHover()}
+                  className={`p-2 rounded-xl border transition-colors cursor-pointer ${
+                    isTtsEnabled 
+                      ? 'bg-emerald-500/10 border-emerald-500/35 text-emerald-400 hover:bg-emerald-500/20' 
+                      : 'bg-white/[0.04] border-white/5 text-slate-400 hover:text-white hover:bg-white/[0.08]'
+                  }`}
+                >
+                  {isTtsEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                </button>
+
                 {/* Reset button */}
                 <button
                   onClick={resetConversation}
                   title="Reset Chat Stream"
                   onMouseEnter={() => sound.playHover()}
-                  className="p-2 rounded-xl bg-white/[0.04] border border-white/5 text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors"
+                  className="p-2 rounded-xl bg-white/[0.04] border border-white/5 text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                 </button>
@@ -276,7 +457,7 @@ export default function Chatbot() {
                 <button
                   onClick={toggleChat}
                   onMouseEnter={() => sound.playHover()}
-                  className="p-2 rounded-xl bg-white/[0.04] border border-white/5 text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors"
+                  className="p-2 rounded-xl bg-white/[0.04] border border-white/5 text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -309,9 +490,24 @@ export default function Chatbot() {
                       : 'bg-white/[0.03] border border-white/[0.06] rounded-tl-none text-slate-300'
                   }`}>
                     {renderMessageText(msg.text)}
-                    <span className={`block text-[8px] mt-1.5 font-mono ${msg.role === 'user' ? 'text-blue-200' : 'text-slate-500'}`}>
-                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    
+                    <div className="flex items-center justify-between gap-4 mt-1.5 pt-1.5 border-t border-white/[0.03] select-none">
+                      <span className={`block text-[8px] font-mono ${msg.role === 'user' ? 'text-blue-200' : 'text-slate-500'}`}>
+                        {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {msg.role === 'assistant' && (
+                        <button
+                          type="button"
+                          onClick={() => handleSpeakText(msg.text)}
+                          onMouseEnter={() => sound.playHover()}
+                          className="p-1 rounded-md text-[8.5px] font-mono font-bold flex items-center gap-1 text-slate-500 hover:text-cyan-400 hover:bg-white/5 cursor-pointer select-none transition-all active:scale-95"
+                          title="Click to speak this message"
+                        >
+                          <Volume2 className="w-3 h-3" />
+                          <span>TTS Speak</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -337,7 +533,7 @@ export default function Chatbot() {
                 <HelpCircle className="w-2.5 h-2.5" /> SUGGESTED TOPICS
               </span>
               <div className="flex gap-1.5 overflow-x-auto pb-1.5 pt-0.5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-                {CONVERSATION_STARTERS.map(( starter, idx ) => (
+                {(companionMode === 'nami' ? NAMI_STARTERS : companionMode === 'interview' ? INTERVIEW_STARTERS : CONVERSATION_STARTERS).map(( starter, idx ) => (
                   <button
                     key={idx}
                     onClick={() => handleSend(starter.query)}
@@ -386,7 +582,7 @@ export default function Chatbot() {
           onMouseEnter={() => sound.playHover()}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className={`fixed bottom-6 ${isOpen ? 'right-6 border-cyan-400 ring-4 ring-cyan-500/10 bg-slate-900' : 'right-6 border-white/10 bg-slate-900'} z-50 flex items-center justify-center w-12 h-12 rounded-full border text-cyan-400 font-sans shadow-[0_0_30px_rgba(0,0,0,0.5)] glow-ring-pulsing hover:text-white duration-200 select-none cursor-pointer`}
+          className={`fixed bottom-4 md:bottom-6 ${isOpen ? 'right-4 md:right-6 border-cyan-400 ring-4 ring-cyan-500/10 bg-slate-900' : 'right-4 md:right-6 border-white/10 bg-slate-900'} z-50 flex items-center justify-center w-12 h-12 rounded-full border text-cyan-400 font-sans shadow-[0_0_30px_rgba(0,0,0,0.5)] glow-ring-pulsing hover:text-white duration-200 select-none cursor-pointer`}
           title="Chat with Anup's AI Representative"
         >
           {isOpen ? <X className="w-5 h-5 text-cyan-300" /> : <MessageSquare className="w-5 h-5 text-cyan-400 animate-[pulse_2s_infinite]" />}

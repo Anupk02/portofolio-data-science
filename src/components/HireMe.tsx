@@ -5,12 +5,18 @@ export function FloatHireMeButton() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    let rafId: number;
     const handleScroll = () => {
-      // Toggle visibility based on scrolled offset
-      setVisible(window.scrollY > 500);
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        setVisible(window.scrollY > 500);
+      });
     };
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   const handleClick = () => {
@@ -24,13 +30,13 @@ export function FloatHireMeButton() {
     <button
       id="floating-hire-me"
       onClick={handleClick}
-      className="fixed bottom-6 right-20 z-40 flex items-center gap-2 px-4 py-3 rounded-full bg-slate-900 border border-white/10 text-emerald-400 font-sans text-xs font-bold glow-ring-pulsing hover:scale-105 active:scale-95 duration-200 shadow-2xl backdrop-blur-md cursor-pointer select-none"
+      className="fixed bottom-[76px] md:bottom-[88px] right-4 md:right-6 z-40 flex items-center gap-1.5 px-3 py-2 rounded-full bg-slate-900/95 border border-emerald-500/30 hover:border-emerald-400 text-emerald-400 font-sans text-[11px] font-bold glow-ring-pulsing hover:scale-105 active:scale-95 duration-200 shadow-2xl backdrop-blur-md cursor-pointer select-none will-change-transform"
     >
-      <span className="relative flex h-2 w-2">
+      <span className="relative flex h-1.5 w-1.5">
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
       </span>
-      <span>Hire Me</span>
+      <span>HIRE</span>
     </button>
   );
 }

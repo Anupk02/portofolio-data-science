@@ -16,20 +16,26 @@ html {
 
 :root {
   --background-color: #f8fafc;
-  --text-color: #0f172a;
-  --panel-bg: rgba(255, 255, 255, 0.75);
-  --panel-border: rgba(15, 23, 42, 0.05);
-  --card-bg: rgba(255, 255, 255, 0.6);
-  --card-border: rgba(15, 23, 42, 0.05);
+  --text-color: #334155; /* Slate-750 body text - rich and meeting WCAG AA contrast (4.5:1) */
+  --text-title: #0f172a; /* Deep Navy headings - WCAG AA contrast (3:1+) */
+  --panel-bg: rgba(255, 255, 255, 0.85);
+  --panel-border: rgba(148, 163, 184, 0.2); 
+  --card-bg: rgba(255, 255, 255, 0.78); /* High quality light frosted panel */
+  --card-border: rgba(148, 163, 184, 0.16);
+  --shadow-color: rgba(148, 163, 184, 0.1);
+  --shadow-glow: rgba(59, 130, 246, 0.04);
 }
 
 .dark {
   --background-color: #0a0e17;
-  --text-color: #f1f5f9;
+  --text-color: #cbd5e1; /* Slate-300 */
+  --text-title: #f8fafc; /* Slate-50 */
   --panel-bg: rgba(10, 14, 23, 0.75);
   --panel-border: rgba(255, 255, 255, 0.08);
   --card-bg: rgba(15, 23, 42, 0.4);
   --card-border: rgba(255, 255, 255, 0.06);
+  --shadow-color: rgba(0, 0, 0, 0.45);
+  --shadow-glow: rgba(6, 182, 212, 0.12);
 }
 
 body {
@@ -39,6 +45,12 @@ body {
   color: var(--text-color);
   overflow-x: hidden;
   max-width: 100%;
+}
+
+/* Enforce accessible header/body base contrast rules */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-title);
+  letter-spacing: -0.025em;
 }
 
 /* Base smooth, coordinated theme switching transition */
@@ -56,7 +68,7 @@ span,
 h1, h2, h3, h4, h5, h6, p,
 input,
 textarea {
-  transition-property: background-color, color, border-color, box-shadow;
+  transition-property: background-color, color, border-color, box-shadow, transform;
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   transition-duration: 400ms;
 }
@@ -70,21 +82,46 @@ textarea {
 }
 
 .geometric-card {
-  border-radius: 1rem;
+  border-radius: 1rem !important;
   background: var(--card-bg);
   backdrop-filter: blur(10px);
   border: 1px solid var(--card-border);
+  box-shadow: 0 10px 30px -10px var(--shadow-color);
 }
 
 .geometric-card:hover {
   transform: translateY(-3px);
   border-color: rgba(6, 182, 212, 0.35); /* cyan hover subtle flare */
-  box-shadow: 0 12px 30px -10px rgba(6, 182, 212, 0.12);
+  box-shadow: 0 20px 40px -15px var(--shadow-glow);
 }
 
 .light .geometric-card:hover {
-  border-color: rgba(6, 182, 212, 0.25);
-  box-shadow: 0 12px 30px -10px rgba(6, 182, 212, 0.08);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 20px 40px -15px rgba(59, 130, 246, 0.08), 0 8px 16px -8px rgba(100, 116, 139, 0.12);
+}
+
+/* Site-wide card consistency overrides (unifying border-radius and shadow depths spec) */
+.glass-panel,
+.geometric-card,
+[class*="rounded-2xl"],
+[class*="rounded-3xl"] {
+  border-radius: 1rem !important; /* Unified 16px border-radius site-wide */
+  box-shadow: 0 10px 30px -10px var(--shadow-color);
+}
+
+/* Ensure hover action profiles match consistently site-wide */
+.group:hover [class*="rounded-2xl"],
+.group:hover [class*="rounded-3xl"],
+[class*="rounded-2xl"]:hover,
+[class*="rounded-3xl"]:hover {
+  box-shadow: 0 20px 40px -15px var(--shadow-glow);
+}
+
+.light .group:hover [class*="rounded-2xl"],
+.light .group:hover [class*="rounded-3xl"],
+.light [class*="rounded-2xl"]:hover,
+.light [class*="rounded-3xl"]:hover {
+  box-shadow: 0 20px 40px -15px rgba(59, 130, 246, 0.08), 0 8px 16px -8px rgba(100, 116, 139, 0.12);
 }
 
 /* Glass card hover for older class mappings */
@@ -135,3 +172,30 @@ textarea {
     box-shadow: 0 0 0 0 rgba(6, 182, 212, 0);
   }
 }
+
+/* Perfect global prefers-reduced-motion fallback constraints */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-delay: -1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    background-attachment: initial !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+}
+
+/* Accessible focus states for keyboard-based navigation (Tab index helper) */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2.5px solid #06b6d4 !important;
+  outline-offset: 2.5px !important;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.65) !important;
+}
+

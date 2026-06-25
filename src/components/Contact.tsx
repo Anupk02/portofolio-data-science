@@ -177,7 +177,7 @@ export default function Contact() {
                 <span className="font-sans text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Direct Email
                 </span>
-                <span className="font-mono text-xs sm:text-sm text-slate-880 dark:text-slate-200 truncate select-all mt-0.5 font-medium">
+                <span className="font-mono text-xs sm:text-sm text-slate-800 dark:text-slate-200 truncate select-all mt-0.5 font-medium">
                   {PERSONAL_INFO.email}
                 </span>
               </div>
@@ -196,7 +196,7 @@ export default function Contact() {
                 <span className="font-sans text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Direct Phone / WhatsApp
                 </span>
-                <span className="font-mono text-xs sm:text-sm text-slate-880 dark:text-slate-200 mt-0.5 font-medium">
+                <span className="font-mono text-xs sm:text-sm text-slate-800 dark:text-slate-200 mt-0.5 font-medium">
                   {PERSONAL_INFO.phone}
                 </span>
               </div>
@@ -211,7 +211,7 @@ export default function Contact() {
                 <span className="font-sans text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Location Registry
                 </span>
-                <span className="font-sans text-xs sm:text-sm text-slate-700 dark:text-slate-350 mt-0.5">
+                <span className="font-sans text-xs sm:text-sm text-slate-700 dark:text-slate-300 mt-0.5">
                   {PERSONAL_INFO.location}
                 </span>
               </div>
@@ -269,7 +269,7 @@ export default function Contact() {
                     errors.name
                       ? 'border-red-500/65 focus:border-red-500'
                       : 'border-slate-200 dark:border-white/[0.06] focus:border-cyan-500'
-                  } text-slate-850 dark:text-slate-205 transition-all`}
+                  } text-slate-800 dark:text-slate-200 transition-all`}
                 />
                 {errors.name && (
                   <span className="font-mono text-[10px] text-red-500 flex items-center gap-1 mt-1">
@@ -295,7 +295,7 @@ export default function Contact() {
                     errors.email
                       ? 'border-red-500/65 focus:border-red-500'
                       : 'border-slate-200 dark:border-white/[0.06] focus:border-cyan-500'
-                  } text-slate-850 dark:text-slate-205 transition-all`}
+                  } text-slate-800 dark:text-slate-200 transition-all`}
                 />
                 {errors.email && (
                   <span className="font-mono text-[10px] text-red-500 flex items-center gap-1 mt-1">
@@ -321,7 +321,7 @@ export default function Contact() {
                     errors.message
                       ? 'border-red-500/65 focus:border-red-500'
                       : 'border-slate-200 dark:border-white/[0.06] focus:border-cyan-500'
-                  } text-slate-850 dark:text-slate-205 transition-all`}
+                  } text-slate-800 dark:text-slate-200 transition-all`}
                 />
                 {errors.message && (
                   <span className="font-mono text-[10px] text-red-500 flex items-center gap-1 mt-1">
