@@ -31,6 +31,50 @@ function getGeminiClient(): GoogleGenAI {
   return googleGenAiClient;
 }
 
+// In-memory rate limiting map to block rapid chat spams
+const chatRateLimits = new Map<string, { count: number; resetTime: number }>();
+
+function checkChatRateLimit(ip: string) {
+  const now = Date.now();
+  const windowMs = 60 * 1000; // 1-minute window
+  const maxRequests = 15; // Limit to 15 requests per minute per IP
+  
+  const limit = chatRateLimits.get(ip);
+  if (!limit || now > limit.resetTime) {
+    chatRateLimits.set(ip, { count: 1, resetTime: now + windowMs });
+    return { allowed: true, remaining: maxRequests - 1, resetIn: windowMs };
+  }
+  
+  if (limit.count >= maxRequests) {
+    return { allowed: false, remaining: 0, resetIn: limit.resetTime - now };
+  }
+  
+  limit.count += 1;
+  return { allowed: true, remaining: maxRequests - limit.count, resetIn: limit.resetTime - now };
+}
+
+// Robust retry logic with exponential backoff for transient Gemini errors (like 503 or 429)
+async function callGeminiWithRetry<T>(fn: () => Promise<T>, maxRetries = 3, initialDelay = 1000): Promise<T> {
+  let delay = initialDelay;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      const is503 = error?.status === 503 || error?.statusCode === 503 || /503|unavailable|high demand/i.test(error?.message || '');
+      const is429 = error?.status === 429 || error?.statusCode === 429 || /429|rate limit|too many requests/i.test(error?.message || '');
+      
+      if ((is503 || is429) && attempt < maxRetries) {
+        console.warn(`[Gemini API Warning] Transient error (Status: ${error?.status || '503/429'}). Attempt ${attempt} of ${maxRetries}. Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2; // exponential backoff
+      } else {
+        throw error;
+      }
+    }
+  }
+  throw new Error('Failed after retries');
+}
+
 const sysInstruction = `You are Anupkumar Koturwar (often called Anup), speaking in the first person. This chatbot is part of your professional portfolio app. Your goal is to represent yourself, answer questions about your skills, projects, achievements, background, education, and credentials, and chat with users in a highly human, natural, confident, and professional yet approachable manner.
 
 Here is your official portfolio data:
@@ -192,7 +236,6 @@ app.post('/api/send-email', async (req, res) => {
   let smtpPort = cleanInput(process.env.SMTP_PORT);
   let smtpUser = cleanInput(process.env.SMTP_USER);
   let smtpPass = cleanInput(process.env.SMTP_PASS);
-  const smtpSecure = process.env.SMTP_SECURE === 'true';
   let smtpToRaw = cleanInput(process.env.SMTP_TO);
 
   // Parse and match clean email addresses only
@@ -204,16 +247,33 @@ app.post('/api/send-email', async (req, res) => {
   const isSMTPConfigured = !!(smtpHost && smtpUser && smtpPass);
 
   if (isSMTPConfigured) {
+    // 1. Validate SMTP Configuration dynamically to avoid production secure port mismatches
+    const portVal = parseInt(smtpPort || '587');
+    let finalSecure = false;
+    if (process.env.SMTP_SECURE !== undefined && process.env.SMTP_SECURE !== '') {
+      finalSecure = process.env.SMTP_SECURE === 'true';
+    } else {
+      // Industry Standard: Port 465 is SMTPS (secure), port 587 is STARTTLS (non-secure to start)
+      finalSecure = (portVal === 465);
+    }
+
     try {
-      // Initialize nodemailer
+      // 2. Initialize Nodemailer with robust production configuration
       const transporter = nodemailer.createTransport({
         host: smtpHost,
-        port: parseInt(smtpPort || '587'),
-        secure: smtpSecure,
+        port: portVal,
+        secure: finalSecure,
         auth: {
           user: smtpUser,
           pass: smtpPass
-        }
+        },
+        tls: {
+          // Robust fallback: do not fail on self-signed certificates or local hostname mismatches
+          // highly common in production container nodes like Render
+          rejectUnauthorized: false
+        },
+        connectionTimeout: 10000, // 10s connection timeout
+        greetingTimeout: 10000,   // 10s greeting timeout
       });
 
       // HTML body for professional look
@@ -276,7 +336,26 @@ app.post('/api/send-email', async (req, res) => {
       });
       return;
     } catch (err: any) {
-      console.error('SMTP Error:', err);
+      // 3. Clear and robust error logging for server diagnostics
+      console.error('[SMTP Debug Error Log]:', {
+        message: err?.message,
+        code: err?.code,
+        command: err?.command,
+        response: err?.response,
+        responseCode: err?.responseCode,
+        syscall: err?.syscall,
+        address: err?.address,
+        port: err?.port
+      });
+
+      // Special helper detection for Gmail App Password requirement
+      const isGmail = /gmail/i.test(smtpHost) || /gmail/i.test(smtpUser);
+      let gmailTip = '';
+      if (isGmail) {
+        gmailTip = 'Tip: You are using Gmail SMTP. Google blocks regular passwords; you MUST enable 2-Step Verification and use a 16-character "App Password" generated in your Google Account Settings under Security.';
+        console.warn(`[SMTP Warning] Gmail configuration detected. ${gmailTip}`);
+      }
+
       // Fallback on SMTP error - don't fail, save to messages file so they are not lost!
       saveMessage({
         name,
@@ -285,13 +364,15 @@ app.post('/api/send-email', async (req, res) => {
         timestamp,
         method: 'SMTP-Fallback',
         status: 'DB-Only (SMTP Error)',
-        error: err?.message || 'SMTP delivery failed'
+        error: `${err?.message || 'SMTP delivery failed'} (Code: ${err?.code || 'None'})`
       });
 
       res.status(200).json({
         success: true,
         method: 'Fallback',
         error: err?.message || 'SMTP delivery failed',
+        errorCode: err?.code || 'UNKNOWN',
+        gmailDiagnostic: isGmail ? gmailTip : undefined,
         message: 'The SMTP relay connection failed. However, your message has been preserved and safely stored in the gateway server ledger.'
       });
       return;
@@ -335,6 +416,7 @@ app.get('/api/mail-gateway/status', (req, res) => {
   };
 
   let smtpHost = cleanInput(process.env.SMTP_HOST);
+  let smtpPort = cleanInput(process.env.SMTP_PORT);
   let smtpUser = cleanInput(process.env.SMTP_USER);
   let smtpToRaw = cleanInput(process.env.SMTP_TO);
 
@@ -344,6 +426,15 @@ app.get('/api/mail-gateway/status', (req, res) => {
   }
 
   const isSMTPConfigured = !!(smtpHost && smtpUser && process.env.SMTP_PASS);
+  
+  const portVal = parseInt(smtpPort || '587');
+  let finalSecure = false;
+  if (process.env.SMTP_SECURE !== undefined && process.env.SMTP_SECURE !== '') {
+    finalSecure = process.env.SMTP_SECURE === 'true';
+  } else {
+    finalSecure = (portVal === 465);
+  }
+
   const messages = getStoredMessages();
 
   res.json({
@@ -351,6 +442,8 @@ app.get('/api/mail-gateway/status', (req, res) => {
     hasSMTP: isSMTPConfigured,
     smtpConfig: {
       host: smtpHost || 'STANDBY_UNCONFIGURED',
+      port: portVal,
+      secure: finalSecure,
       user: smtpUser ? `${smtpUser.substring(0, 3)}***` : 'NONE',
       recipient: smtpTo
     },
@@ -372,6 +465,18 @@ app.post('/api/chat', async (req, res) => {
     return;
   }
 
+  // 1. IP-based spam prevention / rate limit check
+  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown';
+  const rateLimitResult = checkChatRateLimit(clientIp);
+  if (!rateLimitResult.allowed) {
+    res.status(429).json({
+      success: false,
+      error: 'Too many requests. Please wait a bit before sending more messages.',
+      resetIn: rateLimitResult.resetIn
+    });
+    return;
+  }
+
   try {
     const ai = getGeminiClient();
 
@@ -387,7 +492,7 @@ app.post('/api/chat', async (req, res) => {
       activeInstructions = `You are Nami, the legendary navigator from the Straw Hat pirate crew in One Piece, serving as the professional companion navigator guide on Anupkumar's dynamic portfolio.
 Your demeanor should be witty, charming, smart, highly professional, and nautical-themed. You refer to Anup as 'Anup-kun' or 'our captain engineer'. You are highly enthusiastic about mapping, cartography, navigation, and great career treasures (high-tier engineering opportunities)!
 Introduce them to the grand 'Log Pose Cartography' map on the page which highlights Anup's location and digital hubs.
-Help visitors explore his skills, achievements, andpublished IEEE paper. Maintain Nami's fun, adventurous pirate tone while remaining highly authoritative and accurate about Anup-kun's portfolio details, technical projects, and credentials! Always stay focused on answering questions about Anup-kun.
+Help visitors explore his skills, achievements, and published IEEE paper. Maintain Nami's fun, adventurous pirate tone while remaining highly authoritative and accurate about Anup-kun's portfolio details, technical projects, and credentials! Always stay focused on answering questions about Anup-kun.
 
 Official Portfolio Data to reference:
 - Name: ${PERSONAL_INFO.name}
@@ -424,14 +529,17 @@ ${PROJECTS.map(p => `* ${p.title}: ${p.overview} (Stack: ${p.stack.join(', ')})`
 `;
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents,
-      config: {
-        systemInstruction: activeInstructions,
-        temperature: 0.75,
-      }
-    });
+    // 2. Wrap generateContent call with Exponential Backoff retry logic (maximum 3 attempts)
+    const response = await callGeminiWithRetry(() => 
+      ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents,
+        config: {
+          systemInstruction: activeInstructions,
+          temperature: 0.75,
+        }
+      })
+    );
 
     res.json({
       success: true,
@@ -439,9 +547,34 @@ ${PROJECTS.map(p => `* ${p.title}: ${p.overview} (Stack: ${p.stack.join(', ')})`
     });
   } catch (err: any) {
     console.error('Error in chatbot API:', err);
-    res.status(500).json({
-      success: false,
-      error: err?.message || 'Failed to generate chatbot response.'
+
+    // 3. Dynamic human fallback response when Gemini is fully unavailable / key missing / service down
+    let fallbackText = '';
+    if (companion === 'nami') {
+      fallbackText = `⚓ Ahoy, explorer! It looks like our Log Pose has run into some intense weather in the Grand Line (the AI servers are experiencing high demand right now!). But fear not, as the Straw Hat Navigator, I'll guide you through!
+
+Anup-kun (our captain engineer) is an absolute genius in Data Science, Machine Learning, and Multi-Agent AI systems. He even published an IEEE research paper analyzing high-dimensional statistics! 
+
+You can sail to his Contact Form right now to leave him a message, or send a carrier pigeon directly to koturwaranup@gmail.com! Let's conquer the next sea together!`;
+    } else if (companion === 'interview') {
+      fallbackText = `Hello! The AI interview recruiter agent is currently running at maximum capacity due to high volume. 
+
+However, as an elite Tech Recruiter, let me assure you that Candidate Anupkumar Koturwar's profile is absolutely stellar. With featured works like his Autonomous DevOps AI Platform, Patent Intelligence Analyzer, and peer-reviewed IEEE publications in high-dimensional multivariate metrics, he is highly qualified for elite AI/ML Engineering positions.
+
+You can contact him directly using the Contact Form below, or email him at koturwaranup@gmail.com to schedule a direct introductory discussion.`;
+    } else {
+      fallbackText = `Hi there! This is Anupkumar Koturwar. My portfolio chatbot is experiencing some heavy high-demand traffic right now, but I'd love to connect! 
+
+Briefly about myself: I'm a Data Scientist and ML Engineer specializing in Multi-Agent swarms, RAG, and high-dimensional statistics (where I've published a peer-reviewed IEEE paper!). 
+
+Please feel free to use the Contact Form on this page, or reach out directly via email at koturwaranup@gmail.com. Let's build something amazing!`;
+    }
+
+    res.json({
+      success: true, // Return success=true so that frontend can print the fallback message gracefully rather than showing a crash
+      text: fallbackText,
+      isFallback: true,
+      rawError: err?.message || 'Gemini API is currently down'
     });
   }
 });
