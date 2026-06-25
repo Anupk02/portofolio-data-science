@@ -458,18 +458,27 @@ app.post('/api/mail-gateway/clear', (req, res) => {
 
 // Start server / Vite Middleware integrations
 async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
+  const serveStatic = () => {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
+  };
+
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+    } catch (err) {
+      console.warn('Vite development middleware failed to load, falling back to static files:', err);
+      serveStatic();
+    }
+  } else {
+    serveStatic();
   }
 
   app.listen(PORT, '0.0.0.0', () => {

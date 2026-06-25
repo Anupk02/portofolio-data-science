@@ -2,23 +2,24 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import CanvasBackground from './components/CanvasBackground';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
-import About from './components/About';
-import Skills from './components/Skills';
-import Projects from './components/Projects';
-import NauticalLogPoseMap from './components/NauticalLogPoseMap';
-import Timeline from './components/Timeline';
-import Achievements from './components/Achievements';
 import HireMe, { FloatHireMeButton } from './components/HireMe';
-import Contact from './components/Contact';
 import Footer from './components/Footer';
-import Chatbot from './components/Chatbot';
-import CommandCenter from './components/CommandCenter';
-import NauticalCommandDeck from './components/NauticalCommandDeck';
-import NeuralSandbox from './components/NeuralSandbox';
 import TerminalPreloader from './components/TerminalPreloader';
-import CommandPalette from './components/CommandPalette';
 import CustomCursor from './components/CustomCursor';
 
+// Code-splitting with lazy-loading for heavy non-critical-path components
+const About = lazy(() => import('./components/About'));
+const Skills = lazy(() => import('./components/Skills'));
+const NeuralSandbox = lazy(() => import('./components/NeuralSandbox'));
+const Projects = lazy(() => import('./components/Projects'));
+const NauticalLogPoseMap = lazy(() => import('./components/NauticalLogPoseMap'));
+const Timeline = lazy(() => import('./components/Timeline'));
+const Achievements = lazy(() => import('./components/Achievements'));
+const Contact = lazy(() => import('./components/Contact'));
+const Chatbot = lazy(() => import('./components/Chatbot'));
+const CommandCenter = lazy(() => import('./components/CommandCenter'));
+const NauticalCommandDeck = lazy(() => import('./components/NauticalCommandDeck'));
+const CommandPalette = lazy(() => import('./components/CommandPalette'));
 const ProjectDetail = lazy(() => import('./components/ProjectDetail'));
 
 export default function App() {
@@ -133,15 +134,23 @@ export default function App() {
       ) : (
         <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Hero onNavigate={navigateTo} />
-          <About />
-          <Skills />
-          <NeuralSandbox />
-          <Projects onNavigate={navigateTo} />
-          <NauticalLogPoseMap />
-          <Timeline />
-          <Achievements />
-          <HireMe />
-          <Contact />
+          
+          <Suspense fallback={
+            <div className="py-20 flex flex-col items-center justify-center font-sans">
+              <div className="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-400 rounded-full animate-spin mb-3" />
+              <p className="text-cyan-400 font-mono text-xs uppercase tracking-widest animate-pulse">// Aligning Log Pose & Navigation systems...</p>
+            </div>
+          }>
+            <About />
+            <Skills />
+            <NeuralSandbox />
+            <Projects onNavigate={navigateTo} />
+            <NauticalLogPoseMap />
+            <Timeline />
+            <Achievements />
+            <HireMe />
+            <Contact />
+          </Suspense>
         </main>
       )}
 
@@ -152,16 +161,24 @@ export default function App() {
       {!isProjectPage && <FloatHireMeButton />}
 
       {/* Persistent first-person digital double AI Chatbot */}
-      <Chatbot />
+      <Suspense fallback={null}>
+        <Chatbot />
+      </Suspense>
 
       {/* Cyberpunk Interactive CLI Terminal Console command deck */}
-      <CommandCenter />
+      <Suspense fallback={null}>
+        <CommandCenter />
+      </Suspense>
 
       {/* Atmospheric loop synth mixer, mystery chests and recruiter ATS matching console */}
-      <NauticalCommandDeck />
+      <Suspense fallback={null}>
+        <NauticalCommandDeck />
+      </Suspense>
 
       {/* Searchable Command Palette */}
-      <CommandPalette onNavigate={navigateTo} />
+      <Suspense fallback={null}>
+        <CommandPalette onNavigate={navigateTo} />
+      </Suspense>
 
       {/* Custom follower halo cursor */}
       <CustomCursor />
