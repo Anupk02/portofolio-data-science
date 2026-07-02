@@ -216,7 +216,12 @@ app.post('/api/send-email', async (req, res) => {
 
   // Read and clean environment variables
   const cleanInput = (str: string) => {
-    return (str || '').replace(/['"]/g, '').trim();
+    if (!str) return '';
+    let s = str.trim();
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+      s = s.slice(1, -1);
+    }
+    return s.trim();
   };
 
   const sanitizeRecipientList = (toStr: string): string => {
@@ -237,6 +242,7 @@ app.post('/api/send-email', async (req, res) => {
   let smtpUser = cleanInput(process.env.SMTP_USER);
   let smtpPass = cleanInput(process.env.SMTP_PASS);
   let smtpToRaw = cleanInput(process.env.SMTP_TO);
+  let smtpFromRaw = cleanInput(process.env.SMTP_FROM);
 
   // Parse and match clean email addresses only
   let smtpTo = sanitizeRecipientList(smtpToRaw);
@@ -272,25 +278,42 @@ app.post('/api/send-email', async (req, res) => {
 
     try {
       // 2. Initialize Nodemailer with robust production configuration
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: portVal,
-        secure: finalSecure,
-        // Force IPv4 only to bypass failing IPv6 DNS lookups in sandboxed containers (like Render or Cloud Run)
-        family: 4,
-        auth: {
-          user: smtpUser,
-          pass: smtpPass
-        },
-        tls: {
-          // Robust fallback: do not fail on self-signed certificates or local hostname mismatches
-          // highly common in production container nodes like Render
-          rejectUnauthorized: false
-        },
-        connectionTimeout: 10000, // 10 seconds connection timeout
-        greetingTimeout: 10000,   // 10 seconds greeting timeout
-        socketTimeout: 15000,     // 15 seconds socket activity timeout
-      } as any);
+      const isGmailOption = isGmail && (!smtpHost || /gmail\.com/i.test(smtpHost));
+      const transporter = nodemailer.createTransport(
+        isGmailOption
+          ? {
+              service: 'gmail',
+              auth: {
+                user: smtpUser,
+                pass: smtpPass
+              },
+              tls: {
+                rejectUnauthorized: false
+              },
+              connectionTimeout: 10000,
+              greetingTimeout: 10000,
+              socketTimeout: 15000,
+            }
+          : {
+              host: smtpHost,
+              port: portVal,
+              secure: finalSecure,
+              // Force IPv4 only to bypass failing IPv6 DNS lookups in sandboxed containers (like Render or Cloud Run)
+              family: 4,
+              auth: {
+                user: smtpUser,
+                pass: smtpPass
+              },
+              tls: {
+                // Robust fallback: do not fail on self-signed certificates or local hostname mismatches
+                // highly common in production container nodes like Render
+                rejectUnauthorized: false
+              },
+              connectionTimeout: 10000, // 10 seconds connection timeout
+              greetingTimeout: 10000,   // 10 seconds greeting timeout
+              socketTimeout: 15000,     // 15 seconds socket activity timeout
+            } as any
+      );
 
       // HTML body for professional look
       const htmlBody = `
@@ -322,8 +345,13 @@ app.post('/api/send-email', async (req, res) => {
 
       // Determine clean user-facing fallback 'from' email. Some relays like Sendgrid use "apikey" as username.
       // If the smtpUser lacks '@', fallback to first valid email from smtpTo to prevent MTA syntax aborts.
-      const parsedUserEmailMatch = smtpUser.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-      const fromEmail = parsedUserEmailMatch ? parsedUserEmailMatch[0] : smtpTo.split(',')[0].trim();
+      let fromEmail = '';
+      if (smtpFromRaw && smtpFromRaw.includes('@')) {
+        fromEmail = smtpFromRaw;
+      } else {
+        const parsedUserEmailMatch = smtpUser.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+        fromEmail = parsedUserEmailMatch ? parsedUserEmailMatch[0] : smtpTo.split(',')[0].trim();
+      }
       const mailFrom = `"${name} (via Portfolio Gateway)" <${fromEmail}>`;
 
       const mailOptions = {
@@ -434,8 +462,13 @@ app.post('/api/send-email', async (req, res) => {
 
 // 2. Gateway Status, variables & received messages log configuration
 app.get('/api/mail-gateway/status', (req, res) => {
-  const cleanInput = (str: any) => {
-    return (str || '').toString().replace(/['"]/g, '').trim();
+  const cleanInput = (str: any): string => {
+    if (!str) return '';
+    let s = str.toString().trim();
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+      s = s.slice(1, -1);
+    }
+    return s.trim();
   };
 
   const sanitizeRecipientList = (toStr: string): string => {
@@ -455,6 +488,7 @@ app.get('/api/mail-gateway/status', (req, res) => {
   let smtpPort = cleanInput(process.env.SMTP_PORT);
   let smtpUser = cleanInput(process.env.SMTP_USER);
   let smtpToRaw = cleanInput(process.env.SMTP_TO);
+  let smtpFromRaw = cleanInput(process.env.SMTP_FROM);
 
   let smtpTo = sanitizeRecipientList(smtpToRaw);
   if (!smtpTo) {
@@ -481,7 +515,8 @@ app.get('/api/mail-gateway/status', (req, res) => {
       port: portVal,
       secure: finalSecure,
       user: smtpUser ? `${smtpUser.substring(0, 3)}***` : 'NONE',
-      recipient: smtpTo
+      recipient: smtpTo,
+      senderFrom: smtpFromRaw || 'AUTO'
     },
     metrics: {
       totalReceived: messages.length,
