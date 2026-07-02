@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Linkedin, Github, Send, CheckCircle2, Globe, AlertTriangle, Cpu, Terminal, Activity, HardDrive, RefreshCw } from 'lucide-react';
+import { Mail, Phone, MapPin, Linkedin, Github, Send, CheckCircle2, Globe, AlertTriangle, Cpu, Terminal, Activity, HardDrive, RefreshCw, MessageCircle } from 'lucide-react';
 import { PERSONAL_INFO } from '../data';
 
 interface GatewayMessage {
@@ -192,12 +192,33 @@ export default function Contact() {
               <div className="w-11 h-11 rounded-xl bg-teal-500/10 flex items-center justify-center text-teal-400 border border-teal-500/20 shrink-0">
                 <Phone className="w-5 h-5" />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <span className="font-sans text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Direct Phone / WhatsApp
+                  Direct Phone Call
                 </span>
-                <span className="font-mono text-xs sm:text-sm text-slate-800 dark:text-slate-200 mt-0.5 font-medium">
+                <span className="font-mono text-xs sm:text-sm text-slate-800 dark:text-slate-200 mt-0.5 font-medium truncate select-all">
                   {PERSONAL_INFO.phone}
+                </span>
+              </div>
+            </a>
+
+            {/* WhatsApp Card */}
+            <a
+              id="contact-way-whatsapp"
+              href="https://wa.me/918999881962?text=Hello%20Anupkumar%2C%20I%20visited%20your%20portfolio%20and%20would%20love%20to%20connect%21"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-4 p-5 rounded-2xl bg-slate-100/40 hover:bg-slate-100/70 dark:bg-slate-900/10 dark:hover:bg-slate-900/40 border border-slate-200/50 dark:border-white/[0.03] hover:border-emerald-500/30 transition-all duration-300 animate-pulse-subtle"
+            >
+              <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20 shrink-0">
+                <MessageCircle className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="font-sans text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Direct WhatsApp Chat
+                </span>
+                <span className="font-mono text-xs sm:text-sm text-slate-800 dark:text-slate-200 mt-0.5 font-medium truncate">
+                  Chat Instantly (wa.me)
                 </span>
               </div>
             </a>
