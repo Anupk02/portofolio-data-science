@@ -1,10 +1,16 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import dns from 'dns';
 import { createServer as createViteServer } from 'vite';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
+
+// Force Node.js DNS lookup to prefer IPv4 first. This is highly effective in preventing ENETUNREACH errors on IPv6 networks in sandboxed container runtimes (like Render, Cloud Run, AWS ECS).
+if (typeof dns.setDefaultResultOrder === 'function') {
+  dns.setDefaultResultOrder('ipv4first');
+}
 import { PERSONAL_INFO, SKILL_CATEGORIES, PROJECTS, CERTIFICATIONS, ACHIEVEMENTS, EDUCATION_HISTORY, INTERESTS } from './src/data';
 
 dotenv.config();
@@ -283,6 +289,7 @@ app.post('/api/send-email', async (req, res) => {
         isGmailOption
           ? {
               service: 'gmail',
+              family: 4, // Force IPv4 for Gmail service preset
               auth: {
                 user: smtpUser,
                 pass: smtpPass
@@ -293,7 +300,7 @@ app.post('/api/send-email', async (req, res) => {
               connectionTimeout: 10000,
               greetingTimeout: 10000,
               socketTimeout: 15000,
-            }
+            } as any
           : {
               host: smtpHost,
               port: portVal,
